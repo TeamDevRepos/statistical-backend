@@ -91,11 +91,13 @@ export class AuthService {
     const user = await this.userRepository.findOne({
       where: { id: userId, isActive: true },
     });
-  
+
     if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found or is not active`);
+      throw new NotFoundException(
+        `User with ID ${userId} not found or is not active`,
+      );
     }
-  
+
     return user;
   }
 

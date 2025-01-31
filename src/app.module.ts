@@ -3,6 +3,7 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SeedModule } from './seed/seed.module';
+import { TransactionsModule } from './transactions/transactions.module';
 
 @Module({
   imports: [
@@ -17,7 +18,19 @@ import { SeedModule } from './seed/seed.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
+    TypeOrmModule.forRoot({
+      name: 'remote',
+      type: 'postgres',
+      host: 'data.jucatecno.com',
+      port: 49153,
+      database: 'compat_kmn',
+      username: 'olivar',
+      password: 'pyjc12345',
+      entities: [__dirname + '/**/*.entity{.ts,.js}'],
+      synchronize: false,
+    }),
     AuthModule,
-    SeedModule],
+    SeedModule,
+    TransactionsModule],
 })
 export class AppModule {}
