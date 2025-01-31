@@ -48,7 +48,7 @@ export class TransactionsService {
         const filterValues = Array.isArray(filters[filterKey])
           ? filters[filterKey]
           : [filters[filterKey]];
-        
+
         const placeholders = filterValues
           .map((_, index) => `$${queryParams.length + index + 1}`)
           .join(', ');
@@ -70,15 +70,15 @@ export class TransactionsService {
       const groupedData: Record<string, any> = {};
 
       result.forEach((row: any) => {
-        const codigoRespuesta = row.codigo_respuesta.toString();
-        const dia = `dia${parseInt(row.dia, 10)}`;
+        const codeResponse = row.codigo_respuesta.toString();
+        const dayKey = `day${parseInt(row.dia, 10)}`; // Cambia "diaX" por "dayX"
         const count = Number(row.count);
 
-        if (!groupedData[codigoRespuesta]) {
-          groupedData[codigoRespuesta] = { codigo_respuesta: codigoRespuesta };
+        if (!groupedData[codeResponse]) {
+          groupedData[codeResponse] = { codeResponse };
         }
 
-        groupedData[codigoRespuesta][dia] = count;
+        groupedData[codeResponse][dayKey] = count;
       });
 
       return Object.values(groupedData); // Convertimos el objeto en un array
@@ -87,10 +87,7 @@ export class TransactionsService {
     } finally {
       await queryRunner.release();
     }
-}
-
-  
-  
+  }
 
   findOne(id: number) {
     return `This action returns a #${id} transaction`;
