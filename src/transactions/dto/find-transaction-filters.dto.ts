@@ -60,4 +60,9 @@ export class FindTransactionsFilters {
   @IsArray()
   @IsString({ each: true })
   kb4_arqc_vrfy?: string[] | string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  r?: string[] | string;
 }

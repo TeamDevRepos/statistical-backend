@@ -39,6 +39,7 @@ export class TransactionsService {
       tipo_term: 'tipo_term',
       kc0_indicador_de_comercio_elec: 'kc0_indicador_de_comercio_elec',
       kb4_arqc_vrfy: 'kb4_arqc_vrfy',
+      r: 'r',
     };
 
     // Construir condiciones del filtro
@@ -125,6 +126,7 @@ export class TransactionsService {
       'tipo_term',
       'kc0_indicador_de_comercio_elec',
       'kb4_arqc_vrfy',
+      'r',
     ];
 
     try {
