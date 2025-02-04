@@ -18,6 +18,11 @@ export class TransactionsController {
     return this.transactionsService.findAllWithFilters(findTransactionFilters);
   }
 
+ @Get('/unique-values')
+ getUniqueValues() {
+  return this.transactionsService.getUniqueValues()
+ }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.transactionsService.findOne(+id);

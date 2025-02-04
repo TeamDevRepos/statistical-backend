@@ -14,18 +14,18 @@ export class TransactionsService {
   }
 
   async findAllWithFilters(
-    filters: FindTransactionsFilters
+    filters: FindTransactionsFilters,
   ): Promise<{ lastMonth: any[]; currentMonth: any[] }> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
-  
+
     // Definir las tablas (una para el mes anterior y otra para el mes actual)
     const lastMonthTable = 'c_pos_nac_201912';
     const currentMonthTable = 'c_pos_nac_202001';
-  
+
     const queryParams: any[] = [];
     const conditions: string[] = [];
-  
+
     const filterMap: Record<string, string> = {
       kq2_id_medio_acceso: 'kq2_id_medio_acceso',
       dia_y_hora: 'dia_y_hora',
@@ -40,25 +40,26 @@ export class TransactionsService {
       kc0_indicador_de_comercio_elec: 'kc0_indicador_de_comercio_elec',
       kb4_arqc_vrfy: 'kb4_arqc_vrfy',
     };
-  
+
     // Construir condiciones del filtro
     for (const [filterKey, columnName] of Object.entries(filterMap)) {
       if (filters[filterKey]) {
         const filterValues = Array.isArray(filters[filterKey])
           ? filters[filterKey]
           : [filters[filterKey]];
-  
+
         const placeholders = filterValues
           .map((_, index) => `$${queryParams.length + index + 1}`)
           .join(', ');
-  
+
         conditions.push(`${columnName} IN (${placeholders})`);
         queryParams.push(...filterValues);
       }
     }
-  
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  
+
+    const whereClause =
+      conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
     // Definir la consulta base para ambas tablas
     const buildQuery = (table: string) => `
       SELECT 
@@ -70,14 +71,14 @@ export class TransactionsService {
       GROUP BY codigo_respuesta, dia
       ORDER BY codigo_respuesta, dia
     `;
-  
+
     try {
       // Ejecutar ambas consultas en paralelo
       const [lastMonthResult, currentMonthResult] = await Promise.all([
         queryRunner.query(buildQuery(lastMonthTable), queryParams),
         queryRunner.query(buildQuery(currentMonthTable), queryParams),
       ]);
-  
+
       // Función para estructurar los datos en un objeto
       const processResults = (data: any[]) => {
         const groupedData: Record<string, any> = {};
@@ -85,16 +86,16 @@ export class TransactionsService {
           const codeResponse = row.codigo_respuesta.toString();
           const dayKey = `day${parseInt(row.dia, 10)}`;
           const count = Number(row.count);
-  
+
           if (!groupedData[codeResponse]) {
             groupedData[codeResponse] = { codeResponse };
           }
-  
+
           groupedData[codeResponse][dayKey] = count;
         });
         return Object.values(groupedData);
       };
-  
+
       return {
         lastMonth: processResults(lastMonthResult),
         currentMonth: processResults(currentMonthResult),
@@ -105,7 +106,64 @@ export class TransactionsService {
       await queryRunner.release();
     }
   }
-  
+
+  async getUniqueValues(): Promise<Record<string, any[]>> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+
+    const tables = ['c_pos_nac_202001']; // Ajusta según corresponda
+
+    const columns = [
+      'kq2_id_medio_acceso',
+      'codigo_respuesta',
+      'fiid_comer',
+      'fiid_tarj',
+      'ln_comer',
+      'ln_tarj',
+      'entry_mode',
+      'tipo_transac',
+      'tipo_term',
+      'kc0_indicador_de_comercio_elec',
+      'kb4_arqc_vrfy',
+    ];
+
+    try {
+      // Construir consultas LIMITADAS por tabla
+      const queries = columns.map((column) => {
+        return tables
+          .map(
+            (table) => `
+          (SELECT CAST(${column} AS TEXT) AS value 
+           FROM ${table} 
+           WHERE ${column} IS NOT NULL
+           GROUP BY ${column}
+           ORDER BY ${column}
+           LIMIT 10000) -- ⚡ Ajusta este valor según necesidad
+        `,
+          )
+          .join(' UNION ALL ');
+      });
+
+      // Ejecutar todas las consultas en paralelo
+      const results = await Promise.all(
+        queries.map((query) => queryRunner.query(query)),
+      );
+
+      // Estructurar la respuesta
+      const uniqueValues: Record<string, any[]> = {};
+      columns.forEach((col, index) => {
+        const values = new Set<string>();
+        results[index].forEach((row) => values.add(row.value));
+        uniqueValues[col] = Array.from(values);
+      });
+
+      return uniqueValues;
+    } catch (err) {
+      throw new Error(`Error obteniendo valores únicos: ${err}`);
+    } finally {
+      await queryRunner.release();
+    }
+  }
 
   findOne(id: number) {
     return `This action returns a #${id} transaction`;
